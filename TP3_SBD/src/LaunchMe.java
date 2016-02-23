@@ -13,20 +13,23 @@ public class LaunchMe {
 
 	private int cardinalite;
 	private static int qid1Min=75001;
-	private static int qid1Max=75010;
+	private static int qid1Max=75020;
 	private static int qid2Min=20;
 	private static int qid2Max=40;
 	private static int nbValSD=5;
-	private static int kConfifential;
+	private static int kConfifential=5;
+
+	//Attributs utilisés pour la génération des données
 	private static String fichierCsv="monJeuDeDonnees.csv";//"/private/student/8/18/14011518/monJeuDeDonnees.csv";
+	private static int nbData=25;
 
 	public static void main(String[] args) {
+		
 		//Creation du fichier contenant les Qid
 		BufferedWriter bw=null;
 		try {
 			bw = new BufferedWriter(new FileWriter(new File (fichierCsv),false));
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		//Tableau contenant les sd
@@ -40,7 +43,7 @@ public class LaunchMe {
 		List<Nuplet> monJeuDeDonnees= new ArrayList();
 		//GÃ©nÃ©ration du jeu de donnÃ©es
 		Random randomGenerator = new Random();
-		for(int i=0;i<10;i++){
+		for(int i=0;i<nbData;i++){
 			//Génération des qid de façon aléatoire
 			int randomQid1 = qid1Min + randomGenerator.nextInt(qid1Max - qid1Min);
 			int randomQid2 = qid2Min + randomGenerator.nextInt(qid2Max - qid2Min);
@@ -53,19 +56,17 @@ public class LaunchMe {
 				bw.append (randomQid1+" "+randomQid2+"\n");
 				bw.flush();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		try {
 			bw.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		//Appel de mondrian
 		List<ClasseEquivalence> ce= mondrian(monJeuDeDonnees,kConfifential);
-
+		System.out.println(ce.toString());
 	}
 
 	/**
@@ -79,6 +80,23 @@ public class LaunchMe {
 		//Test si on peut produire 2 sous ensemble d au moins k tuples
 		if (jeuDeDonnees.size()<2*k){
 			System.out.println("no allowable multidimensional cut for partition");
+			//Transformation du jeu de données s'il n'est plus divisible en classe d'equivalence
+			ClasseEquivalence ce=new ClasseEquivalence(qid1Max,qid1Min,qid2Max,qid2Min,null);
+			for(int i=0;i<jeuDeDonnees.size();i++){
+				if(jeuDeDonnees.get(i).getQid1()<ce.getQid1Min()){
+					ce.setQid1Min(jeuDeDonnees.get(i).getQid1());
+				}
+				if(jeuDeDonnees.get(i).getQid1()>ce.getQid1Max()){
+					ce.setQid1Max(jeuDeDonnees.get(i).getQid1());
+				}
+				if(jeuDeDonnees.get(i).getQid2()<ce.getQid2Min()){
+					ce.setQid2Min(jeuDeDonnees.get(i).getQid2());
+				}
+				if(jeuDeDonnees.get(i).getQid2()>ce.getQid2Max()){
+					ce.setQid2Max(jeuDeDonnees.get(i).getQid2());
+				}
+			}
+			listClasseEquivalence.add(ce);
 		}else{
 			//Choix de la dimension
 			int id1Min=qid1Max;
@@ -106,6 +124,8 @@ public class LaunchMe {
 			//Test de la plage d'id pour chaque qid. On choisit la dimension la plus large. 
 			//********* Frequency set **************
 			TreeMap<Integer, Integer> frequencySet = new TreeMap<Integer, Integer>();
+			List<Nuplet> jeuDeDonneesL=new ArrayList();
+			List<Nuplet> jeuDeDonneesR=new ArrayList();
 			//Test de la plage des dimensions
 			if(plageQid1>=plageQid2){
 				//Parcours du jeu de données pour construire un histogramme dans un tableau associatif
@@ -120,6 +140,31 @@ public class LaunchMe {
 						frequencySet.put(jeuDeDonnees.get(i).getQid1(),1);
 					}
 				}
+				System.out.println("*************** Tableau associatif **************");
+				System.out.println(frequencySet.toString());
+				//************* FindMedian *************
+				//Parcours du tableau associatif
+				int median=0;
+				int KeyMedian=0;
+				Iterator<Integer> itKey = frequencySet.keySet().iterator();
+
+				while (itKey.hasNext() & median<jeuDeDonnees.size()/2){
+					KeyMedian = (int) itKey.next();
+					int valeur = frequencySet.get(KeyMedian);
+					median+=valeur;
+				}
+				System.out.println("La médiane est "+KeyMedian);
+				
+				//On parcourt les données pour les séparer en 2
+				for(int i=0;i<jeuDeDonnees.size();i++){
+					//Si en dessous médiane, on ajoute au tableau de gauche
+					if (jeuDeDonnees.get(i).getQid1()<=KeyMedian){
+						jeuDeDonneesL.add(jeuDeDonnees.get(i));
+					}else{
+						jeuDeDonneesR.add(jeuDeDonnees.get(i));
+					}
+				}
+
 			}else{
 				//Parcours du jeu de données pour construire un histogramme dans un tableau associatif
 				for(int i=0;i<jeuDeDonnees.size();i++){
@@ -144,13 +189,31 @@ public class LaunchMe {
 				while (itKey.hasNext() & median<jeuDeDonnees.size()/2){
 					KeyMedian = (int) itKey.next();
 					int valeur = frequencySet.get(KeyMedian);
-					System.out.println(KeyMedian);
-					System.out.println(valeur);
 					median+=valeur;
 				}
 				System.out.println("La médiane est "+KeyMedian);
+				
+				//On parcourt les données pour les séparer en 2
+				for(int i=0;i<jeuDeDonnees.size();i++){
+					//Si en dessous médiane, on ajoute au tableau de gauche
+					if (jeuDeDonnees.get(i).getQid2()<=KeyMedian){
+						jeuDeDonneesL.add(jeuDeDonnees.get(i));
+					}else{
+						jeuDeDonneesR.add(jeuDeDonnees.get(i));
+					}
+				}
 			}
+			System.out.println("*************** jeuDeDonneesL **************");
+			System.out.println(jeuDeDonneesL.toString());
+			System.out.println("*************** jeuDeDonneesR **************");
+			System.out.println(jeuDeDonneesR.toString());
+			
+			List<ClasseEquivalence> listClasseEquivalenceL = mondrian(jeuDeDonneesL,k);
+			List<ClasseEquivalence> listClasseEquivalenceR = mondrian(jeuDeDonneesR,k);
+			listClasseEquivalence.addAll(listClasseEquivalenceL);
+			listClasseEquivalence.addAll(listClasseEquivalenceR);
 		}
+		
 		return listClasseEquivalence;
 	}
 }
