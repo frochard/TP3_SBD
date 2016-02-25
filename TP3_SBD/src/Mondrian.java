@@ -1,11 +1,14 @@
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 
 public class Mondrian {
 
 	private int kConfidential;
+	private int lDiversite;
 	private List<Nuplet> data;
 	private List<ClasseEquivalence> listClasseEquivalence;
 
@@ -13,15 +16,19 @@ public class Mondrian {
 		return listClasseEquivalence;
 	}
 
-	public Mondrian(int kConfidential, List<Nuplet> data) {
+	public Mondrian(int kConfidential, int lDiversite, List<Nuplet> data) {
 		this.kConfidential=kConfidential;
+		this.lDiversite=lDiversite;
 		this.data=data;
 		//On recupere la taille du jeu de donnees
 		int dataSize=data.size();
 		//Liste contenant les classes d'Ã©quivalence
 		this.listClasseEquivalence = new ArrayList<ClasseEquivalence>();
-		//Test si on peut produire 2 sous ensemble d au moins k tuples
-		if (isSplittable()){
+		//Test si 
+		//- on peut produire 2 sous ensemble d au moins k tuples
+		//- le paramètre k-confidentialite est respecte
+		//- le paramètre l-diversite est respecte
+		if (dataSize<2*this.kConfidential | ! isParametreK() | ! isParametreL()){
 			System.out.println("no allowable multidimensional cut for partition");
 			//Transformation du jeu de données s'il n'est plus divisible en classe d'equivalence
 			ClasseEquivalence ce=new ClasseEquivalence(data.get(0).getQid1(),data.get(0).getQid1(),data.get(0).getQid2(),data.get(0).getQid2(),new ArrayList<String>());
@@ -107,8 +114,8 @@ public class Mondrian {
 			System.out.println("*************** jeuDeDonneesR **************");
 			System.out.println(jeuDeDonneesR.toString());
 			//Appel recursif
-			Mondrian listClasseEquivalenceL = new Mondrian(this.kConfidential,jeuDeDonneesL);
-			Mondrian listClasseEquivalenceR = new Mondrian(this.kConfidential,jeuDeDonneesR);
+			Mondrian listClasseEquivalenceL = new Mondrian(this.kConfidential,this.lDiversite,jeuDeDonneesL);
+			Mondrian listClasseEquivalenceR = new Mondrian(this.kConfidential,this.lDiversite,jeuDeDonneesR);
 			//Ajout à la liste de classes d'equivalence les listes de classe d'equivalence retournees pour les sous ensembles
 			this.listClasseEquivalence.addAll(listClasseEquivalenceL.getListClasseEquivalence());
 			this.listClasseEquivalence.addAll(listClasseEquivalenceR.getListClasseEquivalence());
@@ -131,23 +138,11 @@ public class Mondrian {
 		return KeyMedian;
 	}
 
-	public boolean isSplittable(){
-		boolean splittable=true;
-		//On recupere la taille du jeu de donnees
-		int dataSize=this.data.size();
-		if(dataSize<2*this.kConfidential){
-			splittable=false;
-		}else{
-			splittable=true;
-		}
-		return splittable;
-	}
-
 	public String chooseDimension(){
+		String dimension="";
 		//On recupere la taille du jeu de donnees
 		int dataSize=this.data.size();
-
-		String dimension="";
+		//On initialise les bornes des qid
 		int id1Min=this.data.get(0).getQid1();
 		int id1Max=this.data.get(0).getQid1();
 		int id2Min=this.data.get(0).getQid2();
@@ -174,8 +169,95 @@ public class Mondrian {
 		if (plageQid1>=plageQid2){
 			dimension="qid1";
 		}else{
-			dimension="qid2";			
+			dimension="qid2";
 		}
 		return dimension;
+	}
+	
+	//Methode verifiant le parametre de confidentialite K
+	public boolean isParametreK(){
+		boolean ParametreK=false;
+		//On recupere la taille du jeu de donnees
+		int dataSize=this.data.size();
+		//On teste si la taille du jeu de donnees est superieur a 2 fois K
+		if(dataSize>2*this.kConfidential){
+			//On crée le frequencySet pour détermnier si la mediane permet de respecter le parametre de confidentialite k
+			TreeMap<Integer, Integer> frequencySet = new TreeMap<Integer, Integer>();
+			List<Nuplet> jeuDeDonneesL=new ArrayList<Nuplet>();
+			List<Nuplet> jeuDeDonneesR=new ArrayList<Nuplet>();
+			//Parcours du jeu de données pour construire un histogramme dans un tableau associatif
+			for(int i=0;i<dataSize;i++){
+				//Test si la cle existe dans la Hashtable
+				if (frequencySet.containsKey(data.get(i).getQid1())){
+					//La clé existe. On recupere le nombre d'occurence
+					int nb=frequencySet.get(data.get(i).getQid1());
+					frequencySet.put(data.get(i).getQid1(),nb+1);
+				}else{
+					//On crée la clé dans la hashtable
+					frequencySet.put(data.get(i).getQid1(),1);
+				}
+			}
+			//************* FindMedian *************
+			int KeyMedian=this.findMedian(frequencySet,data);
+			//On parcourt les données pour les séparer en 2
+			for(int i=0;i<dataSize;i++){
+				//Si en dessous médiane, on ajoute au tableau de gauche
+				if (data.get(i).getQid1()<=KeyMedian){
+					jeuDeDonneesL.add(data.get(i));
+				}else{
+					jeuDeDonneesR.add(data.get(i));
+				}
+			}
+			//On teste si les deux sous ensemble respectent le parametre de confidentialite k
+			if(jeuDeDonneesL.size()>=this.kConfidential & jeuDeDonneesR.size()>=this.kConfidential){
+				ParametreK=true;				
+			}
+		}
+		return ParametreK;
+	}
+	
+	//Methode verifiant la l-diversite
+	public boolean isParametreL(){
+		boolean ParametreL=false;
+		//On recupere la taille du jeu de donnees
+		int dataSize=this.data.size();
+		if(dataSize>2*this.lDiversite){
+			//On crée le frequencySet pour détermnier si la mediane permet de respecter le parametre de confidentialite k
+			TreeMap<Integer, Integer> frequencySet = new TreeMap<Integer, Integer>();
+			//Créer des ensembles en HashSet pour supprimer les doublons
+		    Set<String> dataSetL = new HashSet<String>();
+		    Set<String> dataSetR = new HashSet<String>();
+			//Parcours du jeu de données pour construire un histogramme dans un tableau associatif
+			for(int i=0;i<dataSize;i++){
+				//Test si la cle existe dans la Hashtable
+				if (frequencySet.containsKey(data.get(i).getQid1())){
+					//La clé existe. On recupere le nombre d'occurence
+					int nb=frequencySet.get(data.get(i).getQid1());
+					frequencySet.put(data.get(i).getQid1(),nb+1);
+				}else{
+					//On crée la clé dans la hashtable
+					frequencySet.put(data.get(i).getQid1(),1);
+				}
+			}
+			//************* FindMedian *************
+			int KeyMedian=this.findMedian(frequencySet,data);
+			//On parcourt les données pour les séparer en 2
+			for(int i=0;i<dataSize;i++){
+				//Si en dessous médiane, on ajoute au tableau de gauche
+				if (data.get(i).getQid1()<=KeyMedian){
+					dataSetL.add(data.get(i).getSd());
+				}else{
+					dataSetR.add(data.get(i).getSd());
+				}
+			}
+			//On teste si les deux sous ensemble respectent le parametre de confidentialite k
+			if(dataSetL.size()>=this.lDiversite & dataSetR.size()>=this.lDiversite){
+				System.out.println("dataSetL : "+dataSetL.toString());
+				System.out.println("dataSetR : "+dataSetR.toString());
+				System.out.println("L diversite : "+this.lDiversite);
+				ParametreL=true;
+			}
+		}
+		return ParametreL;
 	}
 }

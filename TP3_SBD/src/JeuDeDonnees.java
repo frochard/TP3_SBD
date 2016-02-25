@@ -15,15 +15,16 @@ public class JeuDeDonnees {
 	private int qid2Max;
 	private int nbValSD;
 	private String fichierCsv="monJeuDeDonnees.csv";
-	private int nbData=60;
+	private int nbData;
 	private List<Nuplet> monJeuDeDonnees;
 	
-	public JeuDeDonnees(int qid1Min, int qid1Max, int qid2Min, int qid2Max, int nbValSD) {
+	public JeuDeDonnees(int qid1Min, int qid1Max, int qid2Min, int qid2Max, int nbValSD,int nbData) {
 		this.qid1Min = qid1Min;
 		this.qid1Max = qid1Max;
 		this.qid2Min = qid2Min;
 		this.qid2Max = qid2Max;
 		this.nbValSD = nbValSD;
+		this.nbData = nbData;
 		//Creation du fichier contenant les Qid
 		BufferedWriter bw=null;
 		try {

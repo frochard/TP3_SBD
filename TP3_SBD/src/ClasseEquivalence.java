@@ -65,7 +65,6 @@ public class ClasseEquivalence {
 	public String toString(){
 		String MyString ="";
 		//Parcours des SD de la classe d'equivalence
-		//MyString+="["+this.qid1Min+","+this.qid1Max+"] ["+this.qid2Min+","+this.qid2Max+"] "+this.sdList;
 		for(String sd:this.sdList){
 			MyString+="["+this.qid1Min+","+this.qid1Max+"] ["+this.qid2Min+","+this.qid2Max+"] "+sd+"\n";
 		}
