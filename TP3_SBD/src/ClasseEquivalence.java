@@ -6,16 +6,16 @@ public class ClasseEquivalence {
 	private int qid1Max;
 	private int qid2Min;
 	private int qid2Max;
-	private List<String> sd;
+	private List<String> sdList;
 	
-	//Constructeur de classe d'équivalence
-	public ClasseEquivalence(int qid1Min, int qid1Max, int qid2Min, int qid2Max, List<String> sd) {
+	//Constructeur de classe d'equivalence
+	public ClasseEquivalence(int qid1Min, int qid1Max, int qid2Min, int qid2Max, List<String> sdList) {
 		super();
 		this.qid1Min = qid1Min;
 		this.qid1Max = qid1Max;
 		this.qid2Min = qid2Min;
 		this.qid2Max = qid2Max;
-		this.sd = sd;
+		this.sdList = sdList;
 	}
 
 	public ClasseEquivalence() {
@@ -38,8 +38,8 @@ public class ClasseEquivalence {
 		return qid2Max;
 	}
 
-	public List<String> getSd() {
-		return sd;
+	public List<String> getSdList() {
+		return sdList;
 	}
 
 	public void setQid1Min(int qid1Min) {
@@ -58,9 +58,17 @@ public class ClasseEquivalence {
 		this.qid2Max = qid2Max;
 	}
 
-	public void setSd(List<String> sd) {
-		this.sd = sd;
+	public void setSd(List<String> sdList) {
+		this.sdList = sdList;
 	}
 	
-	
+	public String toString(){
+		String MyString ="";
+		//Parcours des SD de la classe d'equivalence
+		//MyString+="["+this.qid1Min+","+this.qid1Max+"] ["+this.qid2Min+","+this.qid2Max+"] "+this.sdList;
+		for(String sd:this.sdList){
+			MyString+="["+this.qid1Min+","+this.qid1Max+"] ["+this.qid2Min+","+this.qid2Max+"] "+sd+"\n";
+		}
+		return MyString;
+	}
 }
