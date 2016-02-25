@@ -1,4 +1,3 @@
-
 public class Nuplet {
 	
 	private int qid1;
@@ -12,32 +11,21 @@ public class Nuplet {
 		this.qid2 = qid2;
 		this.sd = sd;
 	}
-	
-	
 
 	public int getQid1() {
 		return qid1;
 	}
 
-
-
 	public int getQid2() {
 		return qid2;
 	}
-
-
 
 	public String getSd() {
 		return sd;
 	}
 
-
-
 	public String toString(){
 		String myString = this.qid1+" "+this.qid2+" "+this.sd;
 		return myString;
-		
 	}
-	
-	
 }
